@@ -22,6 +22,9 @@ env/
 # Snowflake CLI output
 output/
 
+# Streamlit app (deployed via snowflake.yml)
+streamlit_app.py
+
 # Excel files (PDF versions provided)
 *.xls
 *.xlsx

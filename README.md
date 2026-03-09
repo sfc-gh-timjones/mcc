@@ -51,9 +51,11 @@ CSV Catalog ──▶ PRODUCT_CATALOG ──▶ Semantic View    │
 
 ## Deployment Steps
 
-### Optional: Set Up Git Integration
+### Optional: Import Project from Git
 
-If you'd like to import the project directly into Snowsight Workspaces instead of copying SQL into worksheets, set up the Git integration (one-time setup, requires ACCOUNTADMIN):
+If you'd like to import the project directly into Snowsight Workspaces instead of copying SQL into worksheets:
+
+1. Create the API integration for GitHub (one-time setup, requires ACCOUNTADMIN):
 
 ```sql
 CREATE OR REPLACE API INTEGRATION GIT_INTEGRATION
@@ -62,17 +64,15 @@ CREATE OR REPLACE API INTEGRATION GIT_INTEGRATION
   ENABLED = TRUE;
 ```
 
-Then navigate to **Projects > Workspaces**, click the workspace name dropdown, and select **Create from Git Repository** to import the repo.
+2. Navigate to **Projects > Workspaces**
+3. Click on the workspace name dropdown at the top, then select **Create from Git Repository**
+4. Enter repository URL: `https://github.com/sfc-gh-timjones/mcc`
+5. Select `GIT_INTEGRATION` as the API integration
+6. Click **Create**
 
 ### Step 1: Create Infrastructure
 
-Run `setup/01_create_infrastructure.sql` in a Snowsight worksheet:
-
-```sql
-CREATE DATABASE IF NOT EXISTS PRODUCT_DATA_AGENT;
-CREATE SCHEMA IF NOT EXISTS PRODUCT_DATA_AGENT.DATA;
-CREATE SCHEMA IF NOT EXISTS PRODUCT_DATA_AGENT.AGENTS;
-```
+Open `setup/01_create_infrastructure.sql` in a Snowsight worksheet and run it.
 
 Creates database, schemas, and stages for documents and images.
 
