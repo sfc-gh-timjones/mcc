@@ -5,6 +5,11 @@
 -- Run this first.
 -- ============================================================================
 
+CREATE WAREHOUSE IF NOT EXISTS TEST_WAREHOUSE
+    WAREHOUSE_SIZE = 'XSMALL'
+    AUTO_SUSPEND = 30
+    AUTO_RESUME = TRUE;
+
 CREATE DATABASE IF NOT EXISTS PRODUCT_DATA_AGENT;
 
 CREATE SCHEMA IF NOT EXISTS PRODUCT_DATA_AGENT.DATA;

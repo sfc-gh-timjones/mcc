@@ -46,7 +46,7 @@ CREATE OR REPLACE AGENT AGENTS.MCC_PRODUCT_CHATBOT
         "semantic_view": "PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG",
         "execution_environment": {
           "type": "warehouse",
-          "warehouse": "WH_XS"
+          "warehouse": "TEST_WAREHOUSE"
         }
       }
     }

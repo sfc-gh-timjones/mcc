@@ -1,0 +1,53 @@
+-- ============================================================================
+-- Cleanup: Remove All Objects
+-- ============================================================================
+-- Drops everything created by the setup scripts, including the API integration
+-- used for Git import. Run this to fully tear down the project.
+--
+-- WARNING: This is destructive and cannot be undone.
+-- ============================================================================
+
+-- Remove agent from Snowflake Intelligence
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+  REMOVE AGENT PRODUCT_DATA_AGENT.AGENTS.MCC_PRODUCT_CHATBOT;
+
+-- Drop the agent
+DROP AGENT IF EXISTS PRODUCT_DATA_AGENT.AGENTS.MCC_PRODUCT_CHATBOT;
+
+-- Drop the semantic view
+DROP SEMANTIC VIEW IF EXISTS PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG;
+
+-- Drop the Cortex Search Service
+DROP CORTEX SEARCH SERVICE IF EXISTS PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_SEARCH;
+
+-- Drop tables (reverse order of creation)
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.PRODUCT_CATALOG;
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.DOC_CHUNKS;
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.CURVE_DATA;
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.IMAGE_METADATA;
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.PARSED_DOCS;
+DROP TABLE IF EXISTS PRODUCT_DATA_AGENT.DATA.RAW_DOCS;
+
+-- Drop file format
+DROP FILE FORMAT IF EXISTS PRODUCT_DATA_AGENT.DATA.CSV_FORMAT;
+
+-- Drop stored procedure
+DROP PROCEDURE IF EXISTS PRODUCT_DATA_AGENT.DATA.SAVE_PARSED_IMAGES_TO_STAGE();
+
+-- Drop stages (this also deletes all staged files)
+DROP STAGE IF EXISTS PRODUCT_DATA_AGENT.DATA.CSV_STAGE;
+DROP STAGE IF EXISTS PRODUCT_DATA_AGENT.DATA.EXTRACTED_IMAGES_STAGE;
+DROP STAGE IF EXISTS PRODUCT_DATA_AGENT.DATA.DOCS_STAGE;
+
+-- Drop schemas
+DROP SCHEMA IF EXISTS PRODUCT_DATA_AGENT.AGENTS;
+DROP SCHEMA IF EXISTS PRODUCT_DATA_AGENT.DATA;
+
+-- Drop database
+DROP DATABASE IF EXISTS PRODUCT_DATA_AGENT;
+
+-- Drop warehouse
+DROP WAREHOUSE IF EXISTS TEST_WAREHOUSE;
+
+-- Drop API integration (requires ACCOUNTADMIN)
+DROP INTEGRATION IF EXISTS GIT_INTEGRATION;

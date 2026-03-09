@@ -4,7 +4,6 @@
 -- Creates the Cortex Search service over DOC_CHUNKS (both text and curve data).
 -- The agent is created in Step 8 after the semantic view is deployed.
 --
--- Update WH_XS below if you use a different warehouse.
 -- ============================================================================
 
 USE DATABASE PRODUCT_DATA_AGENT;
@@ -13,7 +12,7 @@ USE DATABASE PRODUCT_DATA_AGENT;
 CREATE OR REPLACE CORTEX SEARCH SERVICE DATA.MCC_PRODUCT_SEARCH
     ON chunk_text
     ATTRIBUTES product_name, document_name, document_type
-    WAREHOUSE = WH_XS
+    WAREHOUSE = TEST_WAREHOUSE
     TARGET_LAG = '1 hour'
 AS (
     SELECT 

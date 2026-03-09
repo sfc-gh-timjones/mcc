@@ -47,7 +47,7 @@ Cortex Search Service                                    │
 
 - Snowflake account with Cortex features enabled
 - ACCOUNTADMIN or role with CREATE DATABASE privilege
-- A warehouse named `WH_XS` (or update the scripts to use your warehouse)
+- ACCOUNTADMIN or role with CREATE WAREHOUSE privilege (Step 1 creates `TEST_WAREHOUSE`)
 
 ## Deployment Steps
 
@@ -233,6 +233,7 @@ Try these:
 | `setup/08_ingest_catalog.sql` | CSV load into PRODUCT_CATALOG |
 | `setup/09_create_semantic_view.sql` | Semantic View for text-to-SQL |
 | `setup/10_create_agent.sql` | Cortex Agent with search + analyst tools |
+| `setup/cleanup.sql` | Drop all objects and tear down project |
 
 ## Troubleshooting
 
@@ -245,3 +246,7 @@ Try these:
 **Semantic view errors**: YAML uses `VARCHAR` (not `TEXT`) and `NUMBER` (not `INT`/`FLOAT`). Metrics do not have a `data_type` field.
 
 **CSV load issues**: COPY INTO uses `ON_ERROR = 'CONTINUE'`. Check `SELECT COUNT(*) FROM PRODUCT_CATALOG` returns ~43,007
+
+## Cleanup
+
+To remove all objects created by this project, open `setup/cleanup.sql` in a Snowsight worksheet and run it. This drops the database, all stages and their files, the API integration, and the Snowflake Intelligence registration. **This is irreversible.**
