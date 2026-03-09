@@ -1,120 +1,13 @@
 -- ============================================================================
--- Step 8: Ingest Product Catalog CSV and Create Semantic View
+-- Step 9: Create Semantic View
 -- ============================================================================
--- Loads the product sample data CSV into a table and creates a semantic view
--- for Cortex Analyst text-to-SQL querying.
+-- Creates the MCC_PRODUCT_CATALOG Semantic View for Cortex Analyst
+-- text-to-SQL querying over the product catalog.
 -- ============================================================================
 
 USE DATABASE PRODUCT_DATA_AGENT;
 USE SCHEMA DATA;
 
--- Create stage for CSV upload
-CREATE STAGE IF NOT EXISTS CSV_STAGE;
-
--- Upload CSV from your local clone (update path to match your machine)
--- PUT 'file:///path/to/mcc_pdf_chatbot/data/product sample data.csv' @CSV_STAGE AUTO_COMPRESS=FALSE;
-
--- Create file format
-CREATE OR REPLACE FILE FORMAT CSV_FORMAT
-  TYPE = 'CSV'
-  FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-  SKIP_HEADER = 1
-  TRIM_SPACE = TRUE
-  ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
-  ENCODING = 'UTF-8';
-
--- Create product catalog table
-CREATE OR REPLACE TABLE PRODUCT_CATALOG (
-    MPN TEXT,
-    PRODUCT_FAMILY TEXT,
-    DESCRIPTION TEXT,
-    MIN TEXT,
-    MULT TEXT,
-    LEADTIME TEXT,
-    LEADTIME_UNITS TEXT,
-    REGISTER NUMBER,
-    SOLE_SOURCE NUMBER,
-    SORT_ORDER TEXT,
-    DATASHEET_URL TEXT,
-    CAN_SAMPLE NUMBER,
-    CAN_QUOTE NUMBER,
-    CAN_ORDER NUMBER,
-    CAN_SEARCH NUMBER,
-    CAN_DEBIT NUMBER,
-    CAN_OPP NUMBER,
-    CAN_REGISTER NUMBER,
-    CAN_ROTATE NUMBER,
-    CAN_FORECAST NUMBER,
-    IS_NCNR NUMBER,
-    UOM TEXT,
-    PART_CLASS TEXT,
-    PRICE_CATEGORY TEXT,
-    SUB_FAMILY TEXT,
-    ROOT TEXT,
-    IS_ROOT NUMBER,
-    TRANS_LINKAGE TEXT,
-    REG_LINKAGE TEXT,
-    CAN_CONTRACT NUMBER,
-    IS_BASE TEXT,
-    BASE_PART TEXT,
-    STATUS TEXT,
-    AECQ101_QUALIFIED TEXT,
-    IS_PPAP_AVAILABLE TEXT,
-    PACKAGE_TYPE TEXT,
-    PD_W NUMBER(10,4),
-    VZ_V NUMBER(10,4),
-    CHANNEL TEXT,
-    VDS_V TEXT,
-    ID_A TEXT,
-    POLARITY TEXT,
-    PC_W TEXT,
-    IC_A TEXT,
-    IO_A NUMBER(10,4),
-    MAX_VO_V NUMBER(10,4),
-    NUMBER_OF_FUNCTIONS TEXT,
-    VRWM_V NUMBER(10,4),
-    FORWARD_CURRENT_IF NUMBER(10,0),
-    FORWARD_VOLTAGE_VF NUMBER(10,4),
-    VOLTAGE_CLASS_MAX_V NUMBER(10,0),
-    IC_100DEG_MAX_A NUMBER(10,0),
-    VR_V NUMBER(10,0),
-    LAST_TIME_BUY TEXT,
-    LAST_TIME_SHIP TEXT,
-    MPN_STATUS TEXT,
-    AECQ101_QUALIFIED_2 TEXT,
-    IS_PPAP_AVAILABLE_2 TEXT,
-    NPI_START TEXT,
-    NPI_END TEXT,
-    IS_NPI BOOLEAN,
-    FOCUS_NPI BOOLEAN,
-    SPQ TEXT,
-    PART_CLASSIFICATION TEXT,
-    ABC_ANALYSIS TEXT,
-    COO TEXT,
-    DRY_PACK BOOLEAN,
-    ANTI_STATIC BOOLEAN,
-    CUSTOM_MPN BOOLEAN,
-    NON_CN_COO TEXT,
-    NON_CN_COO_PLANNED_DATE TEXT
-);
-
--- Load data
-COPY INTO PRODUCT_CATALOG
-FROM '@CSV_STAGE/product sample data.csv'
-FILE_FORMAT = (
-    TYPE = 'CSV'
-    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-    SKIP_HEADER = 1
-    TRIM_SPACE = TRUE
-    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
-    ENCODING = 'UTF-8'
-)
-ON_ERROR = 'CONTINUE';
-
--- Verify load
-SELECT COUNT(*) as total_rows FROM PRODUCT_CATALOG;
-
--- Create semantic view for Cortex Analyst
 CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('PRODUCT_DATA_AGENT.DATA',
 $$name: MCC_PRODUCT_CATALOG
 description: MCC (Micro Commercial Components) product catalog with part numbers, electrical specifications, package types, lifecycle status, and compliance data across diodes, MOSFETs, IGBTs, transistors, protection devices, and power modules.
@@ -625,5 +518,3 @@ FALSE
 -- Verify deployment
 SHOW SEMANTIC VIEWS IN PRODUCT_DATA_AGENT.DATA;
 DESC SEMANTIC VIEW PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG;
-
-

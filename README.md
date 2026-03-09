@@ -132,9 +132,9 @@ Verify:
 SHOW CORTEX SEARCH SERVICES IN SCHEMA DATA;
 ```
 
-### Step 8: Ingest Product Catalog and Semantic View
+### Step 8: Ingest Product Catalog
 
-Upload the CSV first:
+Upload the CSV first (if you uploaded all files from `data/` in Step 2, the CSV may already be on `DOCS_STAGE` — but it still needs to be on `CSV_STAGE` for this step):
 
 **Option A: Via Snowsight UI (recommended for POC)**
 
@@ -151,9 +151,20 @@ PUT 'file:///path/to/data/product sample data.csv' @PRODUCT_DATA_AGENT.DATA.CSV_
 
 > **Note:** If your CSV data is in cloud storage (S3, GCS, Azure Blob), you can use an external stage to ingest it into Snowflake. Reach out to your Snowflake account team for details.
 
-Then open `setup/08_ingest_catalog_and_semantic_view.sql` in a Snowsight worksheet and run it (select all, then run).
+Then open `setup/08_ingest_catalog.sql` in a Snowsight worksheet and run it.
 
-This script creates the `PRODUCT_CATALOG` table and deploys the `MCC_PRODUCT_CATALOG` Semantic View for text-to-SQL.
+Creates the `PRODUCT_CATALOG` table and loads ~43,000 rows from the CSV.
+
+Verify:
+```sql
+SELECT COUNT(*) as total_rows FROM PRODUCT_CATALOG;
+```
+
+### Step 9: Create Semantic View
+
+Open `setup/09_create_semantic_view.sql` in a Snowsight worksheet and run it.
+
+Deploys the `MCC_PRODUCT_CATALOG` Semantic View for Cortex Analyst text-to-SQL querying.
 
 Verify:
 ```sql
@@ -161,9 +172,9 @@ SHOW SEMANTIC VIEWS IN PRODUCT_DATA_AGENT.DATA;
 DESC SEMANTIC VIEW PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG;
 ```
 
-### Step 9: Create Cortex Agent
+### Step 10: Create Cortex Agent
 
-Open `setup/09_create_agent.sql` in a Snowsight worksheet and run it.
+Open `setup/10_create_agent.sql` in a Snowsight worksheet and run it.
 
 Creates the `MCC_PRODUCT_CHATBOT` agent with two tools: Cortex Search for document queries and Cortex Analyst for catalog queries.
 
@@ -171,6 +182,26 @@ Verify:
 ```sql
 SHOW AGENTS IN SCHEMA AGENTS;
 ```
+
+### Step 11: Add Agent to Snowflake Intelligence
+
+To use the agent in Snowflake Intelligence, there are two options. The SQL option is recommended as a newly created agent may have a slight delay before appearing in the UI.
+
+**Option 1: Via SQL (Recommended)**
+
+```sql
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+  ADD AGENT PRODUCT_DATA_AGENT.AGENTS.MCC_PRODUCT_CHATBOT;
+```
+
+**Option 2: Via UI**
+
+1. Navigate to **AI & ML > Agents**
+2. Click the **Snowflake Intelligence** tab at the top
+3. Click **Add existing agent** (top right)
+4. Select `MCC_PRODUCT_CHATBOT` and add it
+
+Go to **AI & ML > Snowflake Intelligence**, make sure `MCC_PRODUCT_CHATBOT` is selected, and start asking questions!
 
 ## Sample Questions
 
@@ -198,8 +229,9 @@ Try these:
 | `setup/05_analyze_curves.sql` | AI_COMPLETE vision curve analysis |
 | `setup/06_create_chunks.sql` | Combine text + curve chunks |
 | `setup/07_create_search_service.sql` | Cortex Search Service |
-| `setup/08_ingest_catalog_and_semantic_view.sql` | CSV load, Semantic View |
-| `setup/09_create_agent.sql` | Cortex Agent with search + analyst tools |
+| `setup/08_ingest_catalog.sql` | CSV load into PRODUCT_CATALOG |
+| `setup/09_create_semantic_view.sql` | Semantic View for text-to-SQL |
+| `setup/10_create_agent.sql` | Cortex Agent with search + analyst tools |
 
 ## Troubleshooting
 
