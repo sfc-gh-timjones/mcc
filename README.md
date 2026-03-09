@@ -47,7 +47,6 @@ CSV Catalog ──▶ PRODUCT_CATALOG ──▶ Semantic View    │
 - Snowflake account with Cortex features enabled
 - ACCOUNTADMIN or role with CREATE DATABASE privilege
 - A warehouse named `WH_XS` (or update the scripts to use your warehouse)
-- [SnowSQL](https://docs.snowflake.com/en/user-guide/snowsql) or [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation) for file uploads (Steps 2 and 8 use `PUT` which is not supported in Snowsight worksheets)
 
 ## Deployment Steps
 
@@ -78,7 +77,14 @@ Creates database, schemas, and stages for documents and images.
 
 ### Step 2: Upload Documents
 
-> **Requires SnowSQL or Snowflake CLI** (PUT is not supported in Snowsight worksheets).
+**Option A: Via Snowsight UI (recommended for POC)**
+
+1. Navigate to **Data > Add Data > Load files into a Stage**
+2. Browse and select all PDF and DOCX files from the `data/` folder
+3. Select database `PRODUCT_DATA_AGENT`, schema `DATA`, stage `DOCS_STAGE`
+4. Click **Upload**
+
+**Option B: Via SnowSQL or Snowflake CLI**
 
 Update the file paths in `setup/02_upload_documents.sql` to match your local file locations, then run:
 
@@ -87,7 +93,9 @@ PUT 'file:///path/to/data/*.pdf' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRE
 PUT 'file:///path/to/data/*.docx' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
 ```
 
-After uploading, open `setup/02_upload_documents.sql` in a Snowsight worksheet and run it to refresh the stage and create the `RAW_DOCS` catalog table.
+> **Note:** If your files are in cloud storage (S3, GCS, Azure Blob), you can use an external stage to ingest them into Snowflake. Reach out to your Snowflake account team for details.
+
+After uploading (either option), open `setup/02_upload_documents.sql` in a Snowsight worksheet and run it to refresh the stage and create the `RAW_DOCS` catalog table.
 
 ### Step 3: Parse Documents
 
@@ -126,12 +134,22 @@ SHOW CORTEX SEARCH SERVICES IN SCHEMA DATA;
 
 ### Step 8: Ingest Product Catalog, Semantic View, and Agent
 
-> **Requires SnowSQL or Snowflake CLI** for the CSV upload.
-
 Upload the CSV first:
+
+**Option A: Via Snowsight UI (recommended for POC)**
+
+1. Navigate to **Data > Add Data > Load files into a Stage**
+2. Browse and select `product sample data.csv` from the `data/` folder
+3. Select database `PRODUCT_DATA_AGENT`, schema `DATA`, stage `CSV_STAGE`
+4. Click **Upload**
+
+**Option B: Via SnowSQL or Snowflake CLI**
+
 ```sql
 PUT 'file:///path/to/data/product sample data.csv' @PRODUCT_DATA_AGENT.DATA.CSV_STAGE AUTO_COMPRESS=FALSE;
 ```
+
+> **Note:** If your CSV data is in cloud storage (S3, GCS, Azure Blob), you can use an external stage to ingest it into Snowflake. Reach out to your Snowflake account team for details.
 
 Then open `setup/08_ingest_catalog_and_semantic_view.sql` in a Snowsight worksheet and run it (select all, then run).
 
