@@ -14,7 +14,7 @@ USE SCHEMA DATA;
 CREATE OR REPLACE PROCEDURE SAVE_PARSED_IMAGES_TO_STAGE()
 RETURNS VARCHAR
 LANGUAGE PYTHON
-RUNTIME_VERSION = '3.9'
+RUNTIME_VERSION = '3.11'
 PACKAGES = ('snowflake-snowpark-python')
 HANDLER = 'run'
 AS
@@ -64,7 +64,6 @@ def run(session):
                 overwrite=True
             )
             uploaded += 1
-            os.remove(temp_path)
     
     return f"Uploaded {uploaded} images"
 $$;
