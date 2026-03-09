@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+*.egg
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Snowflake CLI output
+output/
+
+# Excel files (PDF versions provided)
+*.xls
+*.xlsx
+
+# Misc
+Snowflake sample data.xlsx
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
