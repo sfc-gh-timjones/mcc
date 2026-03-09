@@ -13,33 +13,34 @@ Deploy a Cortex Agent for MCC semiconductor product documentation with AI-extrac
 ## Architecture
 
 ```
-PDF/DOCX Files ──▶ AI_PARSE_DOCUMENT ──▶ Text + Images
-                                              │
-                       ┌──────────────────────┤
-                       ▼                      ▼
-               Extracted Images         Text Chunks
-                       │                      │
-                       ▼                      │
-              AI_COMPLETE (vision)            │
-               Curve Analysis                 │
-                       │                      │
-                       ▼                      ▼
-                    DOC_CHUNKS (text + curve readings)
-                           │
-                           ▼
-                    Cortex Search Service ────────────┐
-                                                     │
-CSV Catalog ──▶ PRODUCT_CATALOG ──▶ Semantic View    │
-                                         │           │
-                                         ▼           │
-                              Cortex Analyst         │
-                              (text-to-SQL)          │
-                                         │           │
-                                         ▼           ▼
-                                    Cortex Agent (2 tools)
-                                         │
-                                         ▼
-                               Snowflake Intelligence
+  PDF/DOCX Files                                    CSV Catalog
+       │                                                 │
+       ▼                                                 ▼
+  AI_PARSE_DOCUMENT                                PRODUCT_CATALOG
+       │                                                 │
+       ▼                                                 ▼
+  Text + Images                                    Semantic View
+       │                                                 │
+  ┌────┴────┐                                            ▼
+  ▼         ▼                                      Cortex Analyst
+Images   Text Chunks                               (text-to-SQL)
+  │         │                                            │
+  ▼         │                                            │
+AI_COMPLETE │                                            │
+ (vision)   │                                            │
+  │         │                                            │
+  ▼         ▼                                            │
+DOC_CHUNKS (text + curves)                               │
+       │                                                 │
+       ▼                                                 │
+Cortex Search Service                                    │
+       │                                                 │
+       └──────────────┐            ┌─────────────────────┘
+                      ▼            ▼
+                 Cortex Agent (2 tools)
+                      │
+                      ▼
+               Snowflake Intelligence
 ```
 
 ## Prerequisites
