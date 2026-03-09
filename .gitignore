@@ -24,6 +24,7 @@ output/
 
 # Streamlit app (deployed via snowflake.yml)
 streamlit_app.py
+snowflake.yml
 
 # Excel files (PDF versions provided)
 *.xls
