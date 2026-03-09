@@ -7,12 +7,6 @@
 USE DATABASE PRODUCT_DATA_AGENT;
 USE SCHEMA DATA;
 
--- Create stage for CSV upload
-CREATE STAGE IF NOT EXISTS CSV_STAGE;
-
--- Upload CSV from your local clone (update path to match your machine)
--- PUT 'file:///path/to/mcc_pdf_chatbot/data/product sample data.csv' @CSV_STAGE AUTO_COMPRESS=FALSE;
-
 -- Create file format
 CREATE OR REPLACE FILE FORMAT CSV_FORMAT
   TYPE = 'CSV'
@@ -100,14 +94,7 @@ CREATE OR REPLACE TABLE PRODUCT_CATALOG (
 -- Load data
 COPY INTO PRODUCT_CATALOG
 FROM '@CSV_STAGE/product sample data.csv'
-FILE_FORMAT = (
-    TYPE = 'CSV'
-    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-    SKIP_HEADER = 1
-    TRIM_SPACE = TRUE
-    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
-    ENCODING = 'UTF-8'
-)
+FILE_FORMAT = CSV_FORMAT
 ON_ERROR = 'CONTINUE';
 
 -- Verify load

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Step 9: Create Cortex Agent
+-- Step 10: Create Cortex Agent
 -- ============================================================================
 -- Creates the MCC Product Chatbot agent with two tools:
 --   1) Cortex Search for unstructured document search
