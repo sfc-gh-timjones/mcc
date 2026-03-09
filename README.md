@@ -123,7 +123,7 @@ Combines document text and AI-generated curve readings into `DOC_CHUNKS`.
 
 ### Step 7: Create Cortex Search Service
 
-Open `setup/07_create_search_and_agent.sql` in a Snowsight worksheet and run it.
+Open `setup/07_create_search_service.sql` in a Snowsight worksheet and run it.
 
 Creates a Cortex Search Service over `DOC_CHUNKS`. Wait for indexing to complete before proceeding.
 
@@ -132,7 +132,7 @@ Verify:
 SHOW CORTEX SEARCH SERVICES IN SCHEMA DATA;
 ```
 
-### Step 8: Ingest Product Catalog, Semantic View, and Agent
+### Step 8: Ingest Product Catalog and Semantic View
 
 Upload the CSV first:
 
@@ -153,12 +153,22 @@ PUT 'file:///path/to/data/product sample data.csv' @PRODUCT_DATA_AGENT.DATA.CSV_
 
 Then open `setup/08_ingest_catalog_and_semantic_view.sql` in a Snowsight worksheet and run it (select all, then run).
 
-This script creates the `PRODUCT_CATALOG` table, deploys the `MCC_PRODUCT_CATALOG` Semantic View, and creates the Cortex Agent with both tools.
+This script creates the `PRODUCT_CATALOG` table and deploys the `MCC_PRODUCT_CATALOG` Semantic View for text-to-SQL.
 
 Verify:
 ```sql
 SHOW SEMANTIC VIEWS IN PRODUCT_DATA_AGENT.DATA;
 DESC SEMANTIC VIEW PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG;
+```
+
+### Step 9: Create Cortex Agent
+
+Open `setup/09_create_agent.sql` in a Snowsight worksheet and run it.
+
+Creates the `MCC_PRODUCT_CHATBOT` agent with two tools: Cortex Search for document queries and Cortex Analyst for catalog queries.
+
+Verify:
+```sql
 SHOW AGENTS IN SCHEMA AGENTS;
 ```
 
@@ -187,8 +197,9 @@ Try these:
 | `setup/04_extract_images.sql` | Decode images to stage + metadata |
 | `setup/05_analyze_curves.sql` | AI_COMPLETE vision curve analysis |
 | `setup/06_create_chunks.sql` | Combine text + curve chunks |
-| `setup/07_create_search_and_agent.sql` | Cortex Search Service |
-| `setup/08_ingest_catalog_and_semantic_view.sql` | CSV, Semantic View, Agent |
+| `setup/07_create_search_service.sql` | Cortex Search Service |
+| `setup/08_ingest_catalog_and_semantic_view.sql` | CSV load, Semantic View |
+| `setup/09_create_agent.sql` | Cortex Agent with search + analyst tools |
 
 ## Troubleshooting
 
