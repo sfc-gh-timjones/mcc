@@ -2,7 +2,7 @@
 -- Step 7: Create Cortex Search Service
 -- ============================================================================
 -- Creates the Cortex Search service over DOC_CHUNKS (both text and curve data).
--- The agent is created in Step 8 after the semantic view is deployed.
+-- The agent is created in Step 10 after the semantic view is deployed.
 --
 -- ============================================================================
 
