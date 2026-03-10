@@ -499,7 +499,7 @@ verified_queries:
       ORDER BY AEC_Q101_PARTS DESC
 
   - name: vqr_5
-    question: What are the active Schottky Barrier Rectifiers available in SOD-123 package?
+    question: What are the active Schottky Barrier Rectifiers available in SOD-123FL package?
     sql: |
       SELECT
         MPN,
@@ -508,7 +508,7 @@ verified_queries:
         FORWARD_VOLTAGE_VF
       FROM PRODUCT_DATA_AGENT.DATA.PRODUCT_CATALOG
       WHERE SUB_FAMILY = 'Schottky Barrier Rectifiers'
-        AND PACKAGE_TYPE = 'SOD-123'
+        AND PACKAGE_TYPE = 'SOD-123FL'
         AND STATUS = 'Active'
       ORDER BY MPN
 $$,
