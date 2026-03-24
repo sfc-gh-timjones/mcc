@@ -1,239 +1,174 @@
-# MCC Product Chatbot - Deployment Guide
+# MCC Product Chatbot
 
-Deploy a Cortex Agent for MCC semiconductor product documentation with AI-extracted curve data and a 43,000+ row product catalog.
-
-## What's Included
-
-- **Document Pipeline**: AI_PARSE_DOCUMENT + AI_COMPLETE (vision) to extract text and read data points from graph images
-- **Cortex Search Service**: Vector search over document text and curve readings
-- **Product Catalog**: 43,000+ part numbers with electrical specs, package types, lifecycle status
-- **Semantic View**: MCC_PRODUCT_CATALOG with verified queries for text-to-SQL
-- **Cortex Agent**: MCC_PRODUCT_CHATBOT with search + analyst tools
+A Snowflake Cortex Agent-powered chatbot for querying MCC (Micro Commercial Components) semiconductor product documentation. Uses AI-extracted curve data from datasheet graphs to answer technical questions about specifications, electrical characteristics, and performance curves.
 
 ## Architecture
 
 ```
-  PDF/DOCX Files                                    CSV Catalog
-       │                                                 │
-       ▼                                                 ▼
-  AI_PARSE_DOCUMENT                                PRODUCT_CATALOG
-       │                                                 │
-       ▼                                                 ▼
-  Text + Images                                    Semantic View
-       │                                                 │
-  ┌────┴────┐                                            ▼
-  ▼         ▼                                      Cortex Analyst
-Images   Text Chunks                               (text-to-SQL)
-  │         │                                            │
-  ▼         │                                            │
-AI_COMPLETE │                                            │
- (vision)   │                                            │
-  │         │                                            │
-  ▼         ▼                                            │
-DOC_CHUNKS (text + curves)                               │
-       │                                                 │
-       ▼                                                 │
-Cortex Search Service                                    │
-       │                                                 │
-       └──────────────┐            ┌─────────────────────┘
-                      ▼            ▼
-                 Cortex Agent (2 tools)
-                      │
-                      ▼
-               Snowflake Intelligence
+PDF/DOCX Files
+     │
+     ▼
+AI_PARSE_DOCUMENT (text + image extraction)
+     │
+     ├──▶ Text Content ──▶ DOC_CHUNKS ──▶ Cortex Search ──▶ Cortex Agent
+     │
+     └──▶ Extracted Images ──▶ AI_COMPLETE (vision) ──▶ Curve Readings ──▶ DOC_CHUNKS
 ```
+
+## What It Does
+
+1. **Parses PDFs** using `AI_PARSE_DOCUMENT` with image extraction enabled
+2. **Extracts graph images** from the parsed output and saves them to a stage
+3. **Analyzes each graph** using `AI_COMPLETE` with a vision model to read axis labels, data points, and curve characteristics
+4. **Indexes everything** in Cortex Search -- both the document text and the AI-generated curve analysis
+5. **Cortex Agent** answers natural language questions using the indexed data
+
+This means the agent can answer questions like *"at what temperature does the forward current start to derate?"* using data points that were read from the actual graph image by the vision model.
 
 ## Prerequisites
 
 - Snowflake account with Cortex features enabled
 - ACCOUNTADMIN or role with CREATE DATABASE privilege
-- ACCOUNTADMIN or role with CREATE WAREHOUSE privilege (Step 1 creates `TEST_WAREHOUSE`)
+- A warehouse (scripts use `WH_XS` -- update if needed)
 
-## Deployment Steps
+## Setup Guide
 
-### Optional: Import Project from Git
-
-If you'd like to import the project directly into Snowsight Workspaces instead of copying SQL into worksheets:
-
-1. Create the API integration for GitHub (one-time setup, requires ACCOUNTADMIN):
-
-```sql
-CREATE OR REPLACE API INTEGRATION GIT_INTEGRATION
-  API_PROVIDER = git_https_api
-  API_ALLOWED_PREFIXES = ('https://github.com/')
-  ENABLED = TRUE;
-```
-
-2. Navigate to **Projects > Workspaces**
-3. Click on the workspace name dropdown at the top, then select **Create from Git Repository**
-4. Enter repository URL: `https://github.com/sfc-gh-timjones/mcc`
-5. Select `GIT_INTEGRATION` as the API integration
-6. Click **Create**
+Run the scripts in `setup/` in order. Each script is self-contained and can be run in Snowsight or SnowSQL.
 
 ### Step 1: Create Infrastructure
+```sql
+-- Creates database, schemas, and stages
+@setup/01_create_infrastructure.sql
+```
 
-Open `setup/01_create_infrastructure.sql` in a Snowsight worksheet and run it.
-
-Creates database, schemas, and stages for documents and images.
+Creates:
+- `PRODUCT_DATA_AGENT` database
+- `DATA` schema (tables, stages, search service)
+- `AGENTS` schema (agent)
+- `DOCS_STAGE` (source documents)
+- `EXTRACTED_IMAGES_STAGE` (curve images)
 
 ### Step 2: Upload Documents
-
-**Option A: Via Snowsight UI (recommended for POC)**
-
-1. Navigate to **Data > Add Data > Load files into a Stage**
-2. Browse and select all PDF and DOCX files from the `data/` folder
-3. Select database `PRODUCT_DATA_AGENT`, schema `DATA`, stage `DOCS_STAGE`
-4. Click **Upload**
-
-**Option B: Via SnowSQL or Snowflake CLI**
-
-Update the file paths in `setup/02_upload_documents.sql` to match your local file locations, then run:
-
 ```sql
-PUT 'file:///path/to/data/*.pdf' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
-PUT 'file:///path/to/data/*.docx' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
+-- Update the file path in the script to match your local clone
+@setup/02_upload_documents.sql
 ```
 
-> **Note:** If your files are in cloud storage (S3, GCS, Azure Blob), you can use an external stage to ingest them into Snowflake. Reach out to your Snowflake account team for details.
-
-After uploading (either option), open `setup/02_upload_documents.sql` in a Snowsight worksheet and run it to refresh the stage and create the `RAW_DOCS` catalog table.
+Uploads all PDFs and DOCX files from `data/` to `DOCS_STAGE` and creates the `RAW_DOCS` catalog table.
 
 ### Step 3: Parse Documents
+```sql
+@setup/03_parse_documents.sql
+```
 
-Open `setup/03_parse_documents.sql` in a Snowsight worksheet and run it.
-
-Runs `AI_PARSE_DOCUMENT` with image extraction on every file. Takes a few minutes.
+Runs `AI_PARSE_DOCUMENT` on every file with `{'mode': 'LAYOUT', 'extract_images': true}`. This extracts:
+- Full document text as markdown
+- All embedded images as base64 with IDs (`img-0.jpeg`, `img-1.jpeg`, etc.)
+- Image references inline with figure captions in the text
 
 ### Step 4: Extract Images to Stage
+```sql
+@setup/04_extract_images.sql
+```
 
-Open `setup/04_extract_images.sql` in a Snowsight worksheet and run it.
+Creates and runs a Python stored procedure that:
+1. Reads base64-encoded images from `PARSED_DOCS`
+2. Decodes them and saves as files to `EXTRACTED_IMAGES_STAGE`
+3. Names them as `ProductName(Package)_img-X.jpeg`
 
-Creates a stored procedure that decodes base64 images from parsed output and uploads them to `EXTRACTED_IMAGES_STAGE`. Also creates `IMAGE_METADATA` with figure captions.
+Also creates `IMAGE_METADATA` by extracting figure captions from the parsed markdown (e.g., `![img-2.jpeg](img-2.jpeg)\nFig. 1 - Forward Current Derating Curve`).
 
 ### Step 5: Analyze Curves with Vision Model
+```sql
+@setup/05_analyze_curves.sql
+```
 
-Open `setup/05_analyze_curves.sql` in a Snowsight worksheet and run it.
+This is the key step. For each graph image with a figure label, it calls:
 
-Sends each graph image to `AI_COMPLETE` (vision) to read axis labels, data points, and curve characteristics. Takes several minutes.
+```sql
+AI_COMPLETE('claude-3-5-sonnet', <prompt>, TO_FILE(@STAGE, filename))
+```
+
+The vision model reads the graph and outputs structured data:
+```
+Graph: Fig. 1 - Forward Current Derating Curve
+- X-axis: Case Temperature (°C)
+- Y-axis: Average Forward Current (A)
+- At 25°C, Forward Current = 40A
+- At 100°C, Forward Current = 40A
+- At 125°C, Forward Current = 25A
+- Linear derating begins at 100°C
+```
+
+Results are stored in the `CURVE_DATA` table. This step takes several minutes.
 
 ### Step 6: Create Searchable Chunks
-
-Open `setup/06_create_chunks.sql` in a Snowsight worksheet and run it.
-
-Combines document text and AI-generated curve readings into `DOC_CHUNKS`.
-
-### Step 7: Create Cortex Search Service
-
-Open `setup/07_create_search_service.sql` in a Snowsight worksheet and run it.
-
-Creates a Cortex Search Service over `DOC_CHUNKS`. Wait for indexing to complete before proceeding.
-
-Verify:
 ```sql
-SHOW CORTEX SEARCH SERVICES IN SCHEMA DATA;
+@setup/06_create_chunks.sql
 ```
 
-### Step 8: Ingest Product Catalog
+Combines two types of content into `DOC_CHUNKS`:
 
-Upload the CSV first (if you uploaded all files from `data/` in Step 2, the CSV may already be on `DOCS_STAGE` — but it still needs to be on `CSV_STAGE` for this step):
+| Chunk Type | Source | Example |
+|------------|--------|---------|
+| **Text** | Full parsed document text | Specs tables, pin descriptions, ordering info |
+| **Curve** | AI-generated graph analysis | "At 100°C, Forward Current = 40A" |
 
-**Option A: Via Snowsight UI (recommended for POC)**
+Both types get indexed by Cortex Search.
 
-1. Navigate to **Data > Add Data > Load files into a Stage**
-2. Browse and select `product sample data.csv` from the `data/` folder
-3. Select database `PRODUCT_DATA_AGENT`, schema `DATA`, stage `CSV_STAGE`
-4. Click **Upload**
-
-**Option B: Via SnowSQL or Snowflake CLI**
-
+### Step 7: Create Search Service and Agent
 ```sql
-PUT 'file:///path/to/data/product sample data.csv' @PRODUCT_DATA_AGENT.DATA.CSV_STAGE AUTO_COMPRESS=FALSE;
+@setup/07_create_search_and_agent.sql
 ```
 
-> **Note:** If your CSV data is in cloud storage (S3, GCS, Azure Blob), you can use an external stage to ingest it into Snowflake. Reach out to your Snowflake account team for details.
+Creates:
+- **Cortex Search Service** on `DOC_CHUNKS.chunk_text` with product/document attributes
+- **Cortex Agent** using claude-4-sonnet with instructions to use `~` for graph-derived values
 
-Then open `setup/08_ingest_catalog.sql` in a Snowsight worksheet and run it.
+Test the agent in Snowsight under AI & ML > Snowflake Intelligence.
 
-Creates the `PRODUCT_CATALOG` table and loads ~43,000 rows from the CSV.
+## Project Structure
 
-Verify:
-```sql
-SELECT COUNT(*) as total_rows FROM PRODUCT_CATALOG;
+```
+mcc_pdf_chatbot/
+├── data/                          # Source documents
+│   ├── MBRB4040CTQ(D2-PAK).pdf   # Product datasheets
+│   ├── 2N7002(SOT-23).pdf
+│   ├── SICW025N120Y(TO-247AB).pdf
+│   ├── SMB10J5.0AHE3_SMB10J85CAHE3(SMB).pdf
+│   ├── Halogen_Free_Package_List.docx
+│   ├── MCC Environmental Statement.pdf
+│   ├── soldering profile.pdf
+│   ├── *_Package*.pdf             # Package drawings
+│   ├── *ReliabilityReport*.pdf    # Reliability data
+│   └── MCDS_*.pdf                 # Material content data sheets
+├── setup/
+│   ├── 01_create_infrastructure.sql
+│   ├── 02_upload_documents.sql
+│   ├── 03_parse_documents.sql
+│   ├── 04_extract_images.sql
+│   ├── 05_analyze_curves.sql
+│   ├── 06_create_chunks.sql
+│   └── 07_create_search_and_agent.sql
+└── README.md
 ```
 
-### Step 9: Create Semantic View
+## Snowflake Objects
 
-Open `setup/09_create_semantic_view.sql` in a Snowsight worksheet and run it.
-
-Deploys the `MCC_PRODUCT_CATALOG` Semantic View for Cortex Analyst text-to-SQL querying.
-
-Verify:
-```sql
-SHOW SEMANTIC VIEWS IN PRODUCT_DATA_AGENT.DATA;
-DESC SEMANTIC VIEW PRODUCT_DATA_AGENT.DATA.MCC_PRODUCT_CATALOG;
-```
-
-### Step 10: Create Cortex Agent
-
-Open `setup/10_create_agent.sql` in a Snowsight worksheet and run it.
-
-Creates the `MCC_PRODUCT_CHATBOT` agent with two tools: Cortex Search for document queries and Cortex Analyst for catalog queries.
-
-Verify:
-```sql
-SHOW AGENTS IN SCHEMA AGENTS;
-```
-
-### Step 11: Add Agent to Snowflake Intelligence
-
-To use the agent in Snowflake Intelligence, there are two options. The SQL option is recommended as a newly created agent may have a slight delay before appearing in the UI.
-
-**Option 1: Via SQL (Recommended)**
-
-```sql
-ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
-  ADD AGENT PRODUCT_DATA_AGENT.AGENTS.MCC_PRODUCT_CHATBOT;
-```
-
-**Option 2: Via UI**
-
-1. Navigate to **AI & ML > Agents**
-2. Click the **Snowflake Intelligence** tab at the top
-3. Click **Add existing agent** (top right)
-4. Select `MCC_PRODUCT_CHATBOT` and add it
-
-Go to **AI & ML > Snowflake Intelligence**, make sure `MCC_PRODUCT_CHATBOT` is selected, and start asking questions!
-
-## Sample Questions
-
-Go to **AI & ML > Snowflake Intelligence**, make sure `MCC_PRODUCT_CHATBOT` is selected, and start asking questions!
-
-Try these:
-
-- How many active MOSFETs does MCC have?
-- What is the forward current derating curve for MBRB4040CTQ?
-- What package types are available for Schottky Barrier Rectifiers?
-- What are the electrical specs for the 2N7002?
-- Show me all active N-Channel MOSFETs in TO-220AB package sorted by drain-source voltage.
-- How many automotive qualified parts does MCC have by product family?
-- What is the maximum forward current at 125C for MBRB4040CTQ?
-- What are the capacitance characteristics of the SICW025N120Y?
-
-## Files Reference
-
-| File | Purpose |
-|------|---------|
-| `setup/01_create_infrastructure.sql` | Database, schemas, stages |
-| `setup/02_upload_documents.sql` | Upload PDF/DOCX files to stage |
-| `setup/03_parse_documents.sql` | AI_PARSE_DOCUMENT extraction |
-| `setup/04_extract_images.sql` | Decode images to stage + metadata |
-| `setup/05_analyze_curves.sql` | AI_COMPLETE vision curve analysis |
-| `setup/06_create_chunks.sql` | Combine text + curve chunks |
-| `setup/07_create_search_service.sql` | Cortex Search Service |
-| `setup/08_ingest_catalog.sql` | CSV load into PRODUCT_CATALOG |
-| `setup/09_create_semantic_view.sql` | Semantic View for text-to-SQL |
-| `setup/10_create_agent.sql` | Cortex Agent with search + analyst tools |
-| `setup/cleanup.sql` | Drop all objects and tear down project |
+| Object | Type | Description |
+|--------|------|-------------|
+| `PRODUCT_DATA_AGENT` | Database | Main database |
+| `DATA` | Schema | Data tables and stages |
+| `AGENTS` | Schema | Agent |
+| `DOCS_STAGE` | Stage | Source PDF/DOCX files |
+| `EXTRACTED_IMAGES_STAGE` | Stage | Graph/curve images |
+| `RAW_DOCS` | Table | File catalog from stage directory |
+| `PARSED_DOCS` | Table | AI_PARSE_DOCUMENT output (text + images) |
+| `IMAGE_METADATA` | Table | Image filenames and figure labels |
+| `CURVE_DATA` | Table | AI_COMPLETE vision analysis of each graph |
+| `DOC_CHUNKS` | Table | Searchable chunks (text + curve readings) |
+| `MCC_PRODUCT_SEARCH` | Cortex Search | Vector search over DOC_CHUNKS |
+| `MCC_PRODUCT_CHATBOT` | Agent | Cortex Agent |
 
 ## Troubleshooting
 
@@ -241,12 +176,8 @@ Try these:
 
 **Search returns no results**: Verify chunks exist (`SELECT COUNT(*) FROM DOC_CHUNKS`) and wait for indexing to complete
 
-**Curve data missing**: Step 5 only processes images with figure labels. Check `IMAGE_METADATA` for labels
+**Curve data missing**: Step 5 only processes images with figure labels. Check `IMAGE_METADATA` for labels (`SELECT * FROM IMAGE_METADATA WHERE image_label != 'Unknown'`)
 
-**Semantic view errors**: YAML uses `VARCHAR` (not `TEXT`) and `NUMBER` (not `INT`/`FLOAT`). Metrics do not have a `data_type` field.
+## License
 
-**CSV load issues**: COPY INTO uses `ON_ERROR = 'CONTINUE'`. Check `SELECT COUNT(*) FROM PRODUCT_CATALOG` returns ~43,007
-
-## Cleanup
-
-To remove all objects created by this project, open `setup/cleanup.sql` in a Snowsight worksheet and run it. This drops the database, all stages and their files, the API integration, and the Snowflake Intelligence registration. **This is irreversible.**
+MIT

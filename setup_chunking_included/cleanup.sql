@@ -1,0 +1,47 @@
+-- ============================================================================
+-- Cleanup: Remove All PRODUCT_AGENT Objects
+-- ============================================================================
+-- Drops everything created by the setup_chunking_included scripts.
+-- Does NOT touch the original PRODUCT_DATA_AGENT project.
+--
+-- WARNING: This is destructive and cannot be undone.
+-- ============================================================================
+
+-- Remove agent from Snowflake Intelligence
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+  REMOVE AGENT PRODUCT_AGENT.AGENTS.MCC_PRODUCT_CHATBOT_CHUNKED;
+
+-- Drop the agent
+DROP AGENT IF EXISTS PRODUCT_AGENT.AGENTS.MCC_PRODUCT_CHATBOT_CHUNKED;
+
+-- Drop the semantic view
+DROP SEMANTIC VIEW IF EXISTS PRODUCT_AGENT.DATA.MCC_PRODUCT_CATALOG;
+
+-- Drop the Cortex Search Service
+DROP CORTEX SEARCH SERVICE IF EXISTS PRODUCT_AGENT.DATA.MCC_PRODUCT_SEARCH;
+
+-- Drop tables (reverse order of creation)
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.PRODUCT_CATALOG;
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.DOC_CHUNKS;
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.CURVE_DATA;
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.IMAGE_METADATA;
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.PARSED_DOCS;
+DROP TABLE IF EXISTS PRODUCT_AGENT.DATA.RAW_DOCS;
+
+-- Drop file format
+DROP FILE FORMAT IF EXISTS PRODUCT_AGENT.DATA.CSV_FORMAT;
+
+-- Drop stored procedure
+DROP PROCEDURE IF EXISTS PRODUCT_AGENT.DATA.SAVE_PARSED_IMAGES_TO_STAGE();
+
+-- Drop stages (this also deletes all staged files)
+DROP STAGE IF EXISTS PRODUCT_AGENT.DATA.CSV_STAGE;
+DROP STAGE IF EXISTS PRODUCT_AGENT.DATA.EXTRACTED_IMAGES_STAGE;
+DROP STAGE IF EXISTS PRODUCT_AGENT.DATA.DOCS_STAGE;
+
+-- Drop schemas
+DROP SCHEMA IF EXISTS PRODUCT_AGENT.AGENTS;
+DROP SCHEMA IF EXISTS PRODUCT_AGENT.DATA;
+
+-- Drop database
+DROP DATABASE IF EXISTS PRODUCT_AGENT;

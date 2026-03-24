@@ -1,9 +1,15 @@
 -- ============================================================================
 -- Step 2: Upload Documents
 -- ============================================================================
--- Refreshes the stage directory and creates the RAW_DOCS catalog table.
--- Upload files to DOCS_STAGE before running this script (see README).
+-- Uploads all PDF and DOCX files from the data/ folder to the docs stage.
+-- Update the file path below to match your local clone location.
 -- ============================================================================
+
+-- Upload all PDFs
+PUT 'file:///path/to/mcc_pdf_chatbot/data/*.pdf' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
+
+-- Upload DOCX files
+PUT 'file:///path/to/mcc_pdf_chatbot/data/*.docx' @PRODUCT_DATA_AGENT.DATA.DOCS_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
 
 -- Refresh directory metadata
 ALTER STAGE PRODUCT_DATA_AGENT.DATA.DOCS_STAGE REFRESH;
